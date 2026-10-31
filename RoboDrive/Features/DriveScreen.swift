@@ -2,6 +2,7 @@ import SwiftUI
 import SwiftData
 import SpriteKit
 
+/// Полноэкранный заезд: владеет сеансом, показывает полигон или результат и сохраняет попытку.
 struct DriveScreen: View {
     let mission: Mission
     @Environment(\.dismiss) private var dismiss
@@ -40,6 +41,7 @@ struct DriveScreen: View {
         .onChange(of: session?.phase) { _, phase in
             if phase == .finished, let session { save(session) }
         }
+        // Потеря активности (например, открытие системного экрана) немедленно ставит заезд на паузу.
         .onChange(of: scenePhase) { _, phase in if phase != .active { session?.pause() } }
         .onDisappear { session?.stop(); session?.scene.isPaused = true }
         .confirmationDialog("Выйти из заезда? Текущая попытка не сохранится.", isPresented: $confirmExit) {
@@ -61,6 +63,7 @@ struct DriveScreen: View {
                     Text(session.elapsed.driveTime).monospacedDigit().font(.headline)
                     Button { session.pause() } label: { Image(systemName: "pause.fill").frame(width: 44, height: 44) }.accessibilityLabel("Пауза").disabled(session.phase != .driving)
                 }
+                // В горизонтальном режиме управление находится справа, в вертикальном — под полигоном.
                 if geometry.size.width > geometry.size.height {
                     HStack(spacing: 16) {
                         arena(session)
@@ -106,6 +109,7 @@ struct DriveScreen: View {
             }.font(.caption).foregroundStyle(.secondary).monospacedDigit()
             HStack(spacing: 20) {
                 Joystick { x, y in session.control(x: x, y: y) }
+                    // Смена фазы сбрасывает локальное положение ручки и состояние активного жеста.
                     .id(session.phase).disabled(session.phase != .driving)
                 if !compact {
                     VStack(spacing: 12) {
@@ -128,12 +132,14 @@ struct DriveScreen: View {
         Button { session.stop() } label: { Label("Стоп", systemImage: "stop.fill").font(.headline).frame(maxWidth: .infinity).padding(.vertical, 8) }
             .buttonStyle(.borderedProminent).tint(.red).disabled(session.phase != .driving)
     }
+    /// Новый сеанс сбрасывает таймер, маршрут и сцену. Несохраненную запись старой попытки удаляем из context.
     private func restart() {
         session?.stop(); session?.scene.isPaused = true
         if let attempt, !saved { context.delete(attempt) }
         attempt = nil; saved = false; saveError = nil
         session = DriveSession(mission: mission, sensitivity: sensitivity, showTrail: showTrail, haptics: haptics)
     }
+    /// Вставка выполняется один раз. При ошибке повторно сохраняем ту же запись, не дублируя результат.
     private func save(_ session: DriveSession) {
         guard !saved else { return }
         if attempt == nil {
@@ -145,6 +151,7 @@ struct DriveScreen: View {
     }
 }
 
+/// Переводит смещение пальца в две команды модели. Отпускание всегда обнуляет управление.
 private struct Joystick: View {
     let control: (Double, Double) -> Void
     @State private var offset = CGSize.zero
@@ -160,9 +167,12 @@ private struct Joystick: View {
         }.frame(width: 150, height: 150).contentShape(Circle())
             .gesture(DragGesture(minimumDistance: 0).onChanged { value in
                 let dx = value.translation.width, dy = value.translation.height
+                // Ограничиваем ручку окружностью, сохраняя направление диагонального отклонения.
                 let length = max(hypot(dx, dy), radius)
                 offset = CGSize(width: dx / length * radius, height: dy / length * radius)
                 let x = Double(offset.width) / radius, y = -Double(offset.height) / radius
+                // В SwiftUI Y растет вниз, а положительный steering модели поворачивает влево.
+                // Небольшая мертвая зона подавляет случайное движение около центра.
                 control(abs(x) < 0.08 ? 0 : -x, abs(y) < 0.08 ? 0 : y)
             }.onEnded { _ in offset = .zero; control(0, 0) })
             .accessibilityElement().accessibilityLabel("Джойстик")

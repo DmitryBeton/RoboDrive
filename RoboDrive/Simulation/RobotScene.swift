@@ -1,7 +1,9 @@
 import SpriteKit
 import UIKit
 
+/// Визуальное представление полигона. Не рассчитывает движение и не хранит результаты.
 @MainActor final class RobotScene: SKScene {
+    // Сеанс владеет сценой, поэтому обратная ссылка слабая: иначе возникнет цикл удержания.
     private weak var session: DriveSession?
     private let robot = SKNode()
     private let trail = SKShapeNode()
@@ -9,6 +11,8 @@ import UIKit
     private var lastTime: TimeInterval?
     private var lastRouteCount = 0
     private let routePath = CGMutablePath()
+    // Одна модельная единица (метр) соответствует 100 точкам сцены.
+    // aspectFit масштабирует весь полигон целиком независимо от размера экрана.
     private let unit = 100.0
 
     init(session: DriveSession) {
@@ -22,6 +26,7 @@ import UIKit
 
     private func point(_ p: Vector2) -> CGPoint { CGPoint(x: p.x * unit, y: p.y * unit) }
 
+    /// Статические объекты создаем один раз. Их геометрия берется из той же Mission, что и коллизии.
     private func buildWorld(_ mission: Mission) {
         let gridPath = CGMutablePath()
         for x in stride(from: 0.0, through: 1200.0, by: 50) { gridPath.move(to: CGPoint(x: x, y: 0)); gridPath.addLine(to: CGPoint(x: x, y: 800)) }
@@ -62,6 +67,7 @@ import UIKit
         ring.addChild(title); return ring
     }
 
+    /// Векторный спрайт смотрит вдоль +X. Весь узел вращается на heading из модели.
     private func buildRobot() {
         robot.zPosition = 5
         for y in [-24.0, 24.0] {
@@ -80,6 +86,7 @@ import UIKit
         robot.addChild(front)
     }
 
+    /// После паузы первый кадр получает dt = 0, а не длительность нахождения приложения в фоне.
     func resetClock() { lastTime = nil }
 
     override func update(_ currentTime: TimeInterval) {
@@ -90,6 +97,7 @@ import UIKit
         robot.position = point(session.engine.position)
         robot.zRotation = session.engine.heading
         trail.isHidden = !session.showTrail
+        // Добавляем только новые отрезки: полный обход маршрута каждый кадр замедлил бы долгие заезды.
         if lastRouteCount != session.engine.route.count {
             for i in lastRouteCount..<session.engine.route.count {
                 let p = point(session.engine.route[i])

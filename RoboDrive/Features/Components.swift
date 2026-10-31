@@ -4,6 +4,7 @@ extension Double {
     var driveTime: String { String(format: "%02d:%02d", Int(max(0, self)) / 60, Int(max(0, self)) % 60) }
 }
 
+/// Статическая карта для описания задания и истории. Симуляция здесь не запускается.
 struct RouteMap: View {
     let mission: Mission
     var route: [Vector2] = []
@@ -11,6 +12,7 @@ struct RouteMap: View {
         Canvas { context, size in
             let scale = min(size.width / 12, size.height / 8)
             let offset = CGPoint(x: (size.width - 12 * scale) / 2, y: (size.height - 8 * scale) / 2)
+            // Canvas отсчитывает Y сверху, модель — снизу; переворачиваем только координату отображения.
             func p(_ v: Vector2) -> CGPoint { CGPoint(x: offset.x + v.x * scale, y: offset.y + (8 - v.y) * scale) }
             var grid = Path()
             for x in 0...12 { grid.move(to: p(Vector2(x: Double(x), y: 0))); grid.addLine(to: p(Vector2(x: Double(x), y: 8))) }
@@ -67,6 +69,7 @@ struct PrimaryButton: View {
     }
 }
 
+/// Общая сводка для только что завершенного заезда и ранее сохраненной попытки.
 struct AttemptSummary: View {
     let attempt: Attempt
     let mission: Mission?

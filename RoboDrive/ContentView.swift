@@ -1,6 +1,8 @@
 import SwiftUI
 import SwiftData
 
+/// Корень навигации: практика, свободный режим и история.
+/// Каталог общий для вкладок, а каждый открытый заезд получает собственный DriveRequest.
 struct ContentView: View {
     @Query(sort: \Attempt.date, order: .reverse) private var attempts: [Attempt]
     @State private var missions: [Mission] = []
@@ -11,6 +13,7 @@ struct ContentView: View {
     @State private var request: DriveRequest?
     @AppStorage("lastMission") private var lastMission = "first-drive"
 
+    // Свободные и неуспешные попытки не увеличивают число пройденных учебных заданий.
     private var completed: Set<String> { Set(attempts.filter { $0.succeeded && !$0.freeDrive }.map(\.missionID)) }
 
     var body: some View {
@@ -76,12 +79,14 @@ struct ContentView: View {
             catch { loadError = "Не удалось прочитать встроенные полигоны. \(error.localizedDescription)" }
         }
     }
+    /// Сначала сравниваем точность (касания), затем время. Это же правило используется в подписи результата.
     private func best(for mission: Mission) -> Attempt? {
         attempts.filter { $0.missionID == mission.id && $0.succeeded }.min { ($0.collisions, $0.duration) < ($1.collisions, $1.duration) }
     }
     private func start(_ mission: Mission) { lastMission = mission.id; request = DriveRequest(mission: mission) }
 }
 
+/// Новый UUID позволяет повторно открыть то же упражнение как независимый полноэкранный заезд.
 struct DriveRequest: Identifiable { let id = UUID(); let mission: Mission }
 
 struct MissionDetail: View {

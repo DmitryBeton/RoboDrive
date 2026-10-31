@@ -1,11 +1,13 @@
 import SwiftUI
 import SwiftData
 
+/// История обновляется через @Query после сохранения или удаления попытки в общем ModelContext.
 struct ProgressScreen: View {
     let missions: [Mission]
     @Query(sort: \Attempt.date, order: .reverse) private var attempts: [Attempt]
     @Environment(\.modelContext) private var context
     @State private var deleteID: UUID?
+    // Выбранный UUID хранится отдельно от флага диалога: закрытие диалога не должно терять выбор до удаления.
     @State private var showDeleteConfirmation = false
     @State private var deletionError: String?
     private var completed: Int { Set(attempts.filter { $0.succeeded && !$0.freeDrive }.map(\.missionID)).count }
@@ -49,11 +51,14 @@ struct ProgressScreen: View {
             }
             .alert("Не удалось удалить результат", isPresented: Binding(get: { deletionError != nil }, set: { if !$0 { deletionError = nil } })) { Button("Понятно") { deletionError = nil } } message: { Text(deletionError ?? "") }
     }
+    /// Для свободного заезда восстанавливаем полигон без финиша и обязательных точек.
     private func originalMission(_ attempt: Attempt) -> Mission? {
         missions.first { attempt.freeDrive ? "free-" + $0.id == attempt.missionID : $0.id == attempt.missionID }.map { attempt.freeDrive ? $0.freeVariant : $0 }
     }
 }
 
+/// AppStorage хранит небольшие настройки отдельно от базы результатов.
+/// Чувствительность и показ траектории считываются при создании следующего сеанса.
 struct SettingsScreen: View {
     @Environment(\.dismiss) private var dismiss
     @AppStorage("showTrail") private var showTrail = true
