@@ -8,6 +8,7 @@ import UIKit
     private var checkpointNodes: [SKShapeNode] = []
     private var lastTime: TimeInterval?
     private var lastRouteCount = 0
+    private let routePath = CGMutablePath()
     private let unit = 100.0
 
     init(session: DriveSession) {
@@ -90,11 +91,11 @@ import UIKit
         robot.zRotation = session.engine.heading
         trail.isHidden = !session.showTrail
         if lastRouteCount != session.engine.route.count {
-            let path = CGMutablePath()
-            for (i, p) in session.engine.route.enumerated() {
-                if i == 0 { path.move(to: point(p)) } else { path.addLine(to: point(p)) }
+            for i in lastRouteCount..<session.engine.route.count {
+                let p = point(session.engine.route[i])
+                if i == 0 { routePath.move(to: p) } else { routePath.addLine(to: p) }
             }
-            trail.path = path; lastRouteCount = session.engine.route.count
+            trail.path = routePath; lastRouteCount = session.engine.route.count
         }
         for (i, node) in checkpointNodes.enumerated() { node.alpha = i < session.engine.checkpointIndex ? 0.25 : 1 }
     }

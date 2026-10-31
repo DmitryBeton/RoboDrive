@@ -58,7 +58,7 @@ struct ContentView: View {
                         Text("Исследуйте движение без ограничений по времени и столкновениям.").foregroundStyle(.secondary)
                         Picker("Полигон", selection: $freeMission) { ForEach(missions) { Text($0.title).tag($0.id) } }.pickerStyle(.menu)
                         if let mission = missions.first(where: { $0.id == freeMission }) {
-                            RouteMap(mission: mission)
+                            RouteMap(mission: mission.freeVariant)
                             Text(mission.subtitle).font(.title3.weight(.semibold))
                             Label("Завершите заезд вручную, чтобы сохранить траекторию и результат.", systemImage: "info.circle").font(.subheadline).foregroundStyle(.secondary)
                             PrimaryButton(title: "Начать свободный заезд", symbol: "steeringwheel") { request = DriveRequest(mission: mission.freeVariant) }

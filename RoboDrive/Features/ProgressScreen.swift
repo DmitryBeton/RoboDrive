@@ -6,6 +6,7 @@ struct ProgressScreen: View {
     @Query(sort: \Attempt.date, order: .reverse) private var attempts: [Attempt]
     @Environment(\.modelContext) private var context
     @State private var deleteID: UUID?
+    @State private var showDeleteConfirmation = false
     @State private var deletionError: String?
     private var completed: Int { Set(attempts.filter { $0.succeeded && !$0.freeDrive }.map(\.missionID)).count }
     var body: some View {
@@ -33,12 +34,12 @@ struct ProgressScreen: View {
                                 Spacer()
                                 Text(attempt.duration.driveTime).monospacedDigit().foregroundStyle(.secondary)
                             }
-                        }.swipeActions { Button("Удалить", role: .destructive) { deleteID = attempt.id } }
+                        }.swipeActions { Button("Удалить", role: .destructive) { deleteID = attempt.id; showDeleteConfirmation = true } }
                     }
                 }
             }
         }.navigationTitle("Прогресс")
-            .confirmationDialog("Удалить этот результат?", isPresented: Binding(get: { deleteID != nil }, set: { if !$0 { deleteID = nil } })) {
+            .confirmationDialog("Удалить этот результат?", isPresented: $showDeleteConfirmation) {
                 Button("Удалить", role: .destructive) {
                     guard let record = attempts.first(where: { $0.id == deleteID }) else { return }
                     context.delete(record)
@@ -49,7 +50,7 @@ struct ProgressScreen: View {
             .alert("Не удалось удалить результат", isPresented: Binding(get: { deletionError != nil }, set: { if !$0 { deletionError = nil } })) { Button("Понятно") { deletionError = nil } } message: { Text(deletionError ?? "") }
     }
     private func originalMission(_ attempt: Attempt) -> Mission? {
-        missions.first { attempt.freeDrive ? "free-" + $0.id == attempt.missionID : $0.id == attempt.missionID }
+        missions.first { attempt.freeDrive ? "free-" + $0.id == attempt.missionID : $0.id == attempt.missionID }.map { attempt.freeDrive ? $0.freeVariant : $0 }
     }
 }
 

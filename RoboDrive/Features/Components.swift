@@ -25,10 +25,12 @@ struct RouteMap: View {
                 let center = p(point)
                 context.stroke(Path(ellipseIn: CGRect(x: center.x - 4, y: center.y - 4, width: 8, height: 8)), with: .color(.orange), lineWidth: 1.5)
             }
+            if !mission.isFree {
             let goal = p(mission.goal)
             let rect = CGRect(x: goal.x - 0.58 * scale, y: goal.y - 0.58 * scale, width: 1.16 * scale, height: 1.16 * scale)
             context.fill(Path(ellipseIn: rect), with: .color(.green.opacity(0.25)))
             context.stroke(Path(ellipseIn: rect), with: .color(.green), lineWidth: 1.5)
+            }
             if route.count > 1 {
                 var line = Path(); line.move(to: p(route[0]))
                 for point in route.dropFirst() { line.addLine(to: p(point)) }
