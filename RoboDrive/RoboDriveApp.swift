@@ -1,17 +1,13 @@
-//
-//  RoboDriveApp.swift
-//  RoboDrive
-//
-//  Created by Дмитрий Чалов on 31.10.2026.
-//
-
 import SwiftUI
+import SwiftData
 
-@main
-struct RoboDriveApp: App {
+@main struct RoboDriveApp: App {
+    @AppStorage("appearance") private var appearance = "system"
     var body: some Scene {
         WindowGroup {
-            ContentView()
+            ContentView().tint(.blue)
+                .preferredColorScheme(appearance == "light" ? .light : (appearance == "dark" ? .dark : nil))
         }
+        .modelContainer(for: Attempt.self)
     }
 }
